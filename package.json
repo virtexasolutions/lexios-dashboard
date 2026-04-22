@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/virtexasolutions/lexios-dashboard#readme",
   "dependencies": {
+    "axios": "^1.15.2",
     "dotenv": "^17.4.2",
     "express": "^5.2.1"
   }

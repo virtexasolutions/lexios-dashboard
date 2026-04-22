@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 require('dotenv').config();
+const { processDirective } = require('./orchestrator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,9 +28,26 @@ app.get('/api/swarm-state', (req, res) => {
 // API to execute commands from the dashboard terminal
 app.post('/api/execute', (req, res) => {
     const { command } = req.body;
+    const cmdLower = command.toLowerCase();
     
-    // Security: In a real app, you'd want to sanitize this. 
-    // For a local-first OS, we give the architect full control.
+    // Check for LexiOS Swarm Directives
+    const directives = ['draft', 'scan', 'analyze', 'audit', 'brief'];
+    const isDirective = directives.some(d => cmdLower.startsWith(d));
+
+    if (isDirective) {
+        // Run via Swarm Orchestrator (Ollama)
+        processDirective(command).then(output => {
+            res.json({ 
+                success: true, 
+                output: `✨ Mission Accomplished by Swarm Agent.\n\n${output}` 
+            });
+        }).catch(err => {
+            res.json({ success: false, output: "Ollama Error: " + err.message });
+        });
+        return;
+    }
+    
+    // Fallback to standard system commands
     exec(command, (error, stdout, stderr) => {
         if (error) {
             return res.json({ success: false, output: stderr || error.message });
