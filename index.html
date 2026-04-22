@@ -438,6 +438,14 @@
                     });
                     const result = await response.json();
                     terminalOutput.innerHTML += `<div class="mb-4 text-slate-400">${result.output.replace(/\n/g, '<br>')}</div>`;
+                    
+                    // Auto-play audio if returned
+                    if (result.audio) {
+                        const audio = new Audio(result.audio);
+                        audio.play();
+                        terminalOutput.innerHTML += `<div class="mb-4 text-cyan-400 italic">🔊 Playing Audio Briefing...</div>`;
+                    }
+
                     terminalOutput.scrollTop = terminalOutput.scrollHeight;
                 } catch (err) {
                     terminalOutput.innerHTML += `<div class="mb-4 text-rose-500">Error: Bridge disconnected.</div>`;

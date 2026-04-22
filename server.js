@@ -4,12 +4,14 @@ const path = require('path');
 const { exec } = require('child_process');
 require('dotenv').config();
 const { processDirective } = require('./orchestrator');
+const { speak } = require('./speaker');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static('.'));
+app.use('/audio', express.static('audio'));
 
 // API to get current Swarm state from markdown files
 app.get('/api/swarm-state', (req, res) => {
@@ -36,13 +38,21 @@ app.post('/api/execute', (req, res) => {
 
     if (isDirective) {
         // Run via Swarm Orchestrator (Ollama)
-        processDirective(command).then(output => {
+        processDirective(command).then(async (output) => {
+            let audioFile = null;
+            
+            // If it's a brief, generate audio
+            if (cmdLower.startsWith('brief')) {
+                audioFile = await speak(output);
+            }
+
             res.json({ 
                 success: true, 
-                output: `✨ Mission Accomplished by Swarm Agent.\n\n${output}` 
+                output: `✨ Mission Accomplished by Swarm Agent.\n\n${output}`,
+                audio: audioFile ? `/audio/${audioFile}` : null
             });
         }).catch(err => {
-            res.json({ success: false, output: "Ollama Error: " + err.message });
+            res.json({ success: false, output: "Swarm Error: " + err.message });
         });
         return;
     }
