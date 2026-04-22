@@ -382,9 +382,72 @@
                     </div>
                 </div>
 
+                <!-- Terminal / Command Input -->
+                <div class="glass-panel p-6 rounded-[2.5rem] mt-6 border-t border-cyan-500/20 bg-black/60 shadow-2xl">
+                    <div class="flex items-center gap-4">
+                        <div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400">
+                            <iconify-icon icon="solar:terminal-linear" width="20"></iconify-icon>
+                        </div>
+                        <input id="commandInput" type="text" placeholder="Execute System Command (e.g. 'npm start swarm' or 'git status')..." 
+                            class="flex-1 bg-transparent border-none text-sm font-mono text-cyan-400 focus:outline-none placeholder-slate-700">
+                        <span class="text-[10px] font-black text-slate-700 uppercase tracking-widest">Architect@LexiOS:~$</span>
+                    </div>
+                    <div id="terminalOutput" class="mt-4 text-[11px] font-mono text-slate-500 max-h-32 overflow-y-auto hidden">
+                        <!-- Command results will appear here -->
+                    </div>
+                </div>
+
                 <div class="h-10"></div>
             </div>
         </main>
     </div>
+
+    <!-- LexiOS Command Bridge Logic -->
+    <script>
+        const commandInput = document.getElementById('commandInput');
+        const terminalOutput = document.getElementById('terminalOutput');
+
+        // Function to update logs from the actual .md files
+        async function updateSwarmState() {
+            try {
+                const response = await fetch('/api/swarm-state');
+                const data = await response.json();
+                if (data.logs) {
+                    // Logic to parse markdown logs into the UI can go here
+                    console.log("Swarm state synced from files.");
+                }
+            } catch (err) {
+                console.warn("Command Bridge not connected. Running in Offline Mode.");
+            }
+        }
+
+        // Handle Command Execution
+        commandInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                const command = commandInput.value;
+                commandInput.value = '';
+                
+                terminalOutput.classList.remove('hidden');
+                terminalOutput.innerHTML += `<div class="text-cyan-400 mb-1">Architect@LexiOS:~$ ${command}</div>`;
+                
+                try {
+                    const response = await fetch('/api/execute', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ command })
+                    });
+                    const result = await response.json();
+                    terminalOutput.innerHTML += `<div class="mb-4 text-slate-400">${result.output.replace(/\n/g, '<br>')}</div>`;
+                    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+                } catch (err) {
+                    terminalOutput.innerHTML += `<div class="mb-4 text-rose-500">Error: Bridge disconnected.</div>`;
+                }
+            }
+        });
+
+        // Initialize
+        updateSwarmState();
+        setInterval(updateSwarmState, 10000); // Sync every 10 seconds
+    </script>
 </body>
 </html>
